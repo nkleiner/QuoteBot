@@ -1,12 +1,8 @@
 import os
 import discord
 import json
-from DatabaseService import HandleDatabaseRefreshRequest
-from DatabaseService import InsertNewQuote
-from DatabaseService import InitializeDatabaseConnection
-from QuoteService import HandleQuoteRequest
-from QuoteService import GetInspirationalQuote
-from QuoteService import UpdateQuotePool
+from DatabaseService import DatabaseService
+from QuoteService import QuoteService
 
 def LoadConfiguration():
     script_dir = os.path.dirname(__file__)
@@ -19,10 +15,13 @@ def LoadConfiguration():
 
 if __name__ == "__main__":
     #Connection to database
+    dbService = DatabaseService()
+    quoteService = QuoteService()
+
     intents = discord.Intents.default()
     intents.message_content = True
-    InitializeDatabaseConnection()
-    UpdateQuotePool()
+    dbService.InitializeDatabaseConnection()
+    quoteService.UpdateQuotePool(dbService)
 
     botToken, quoteChannelID = LoadConfiguration()
     
@@ -47,18 +46,18 @@ if __name__ == "__main__":
         #Watching for New Quotes to be added to the database
         if channel == "quote-channel":
             print("New Quote Submitted")
-            result = InsertNewQuote(user_message)
+            result = dbService.InsertNewQuote(user_message)
 
             if(result):
                 await message.add_reaction(u"\U0001F44D")
-                UpdateQuotePool()
+                quoteService.UpdateQuotePool(dbService)
             
             else:
                 await message.add_reaction(u"\U0001F44E")
 
         #Quote Feature, can be random quote or user specific
         if message.content.startswith('!quote'):
-            quoteResponse = HandleQuoteRequest(message.content)
+            quoteResponse = quoteService.HandleQuoteRequest(message.content)
 
             if(quoteResponse.quote == "N/A"):
                 await message.channel.send(f'No quotes for {quoteResponse.author} exist in the current database') 
@@ -77,7 +76,7 @@ if __name__ == "__main__":
             
         #Inspirational Quotes
         if message.content.startswith('!inspire'):
-            quote = GetInspirationalQuote()
+            quote = quoteService.GetInspirationalQuote()
             await message.channel.send(quote)
 
         if message.content.startswith('!stats'):
@@ -93,7 +92,7 @@ if __name__ == "__main__":
             channel_quotes = [message.content async for message in council.history(limit=None)]
             await message.channel.send("Quotes gathered, preparing database reset")
 
-            status = HandleDatabaseRefreshRequest(channel_quotes)
+            status = dbService.HandleDatabaseRefreshRequest(channel_quotes)
 
             if status == True:
                 await message.channel.send("Quote database successfully refreshed")
