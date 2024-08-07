@@ -7,44 +7,77 @@ import os
 #function for prompting single-line text from the user
 def ask(parent=None, message='', default_value=''):
     dlg = wx.TextEntryDialog(parent, message, value=default_value)
-    dlg.ShowModal()
+    buttonChoice = dlg.ShowModal()
     result = dlg.GetValue()
     dlg.Destroy()
-    return result
+    if buttonChoice == 5100:
+        return result
+    else:
+        return False
 
-# Initialize wx App
+
+def writeToFile(configDraft):
+    
+    with open("config.json", "w") as file:
+        file.write(configDraft)
+        file.close()
+
+    if (os.path.isfile("config.json")):
+        message = "config.json file successfully created."
+        caption = "File Created"
+        confirm=wx.MessageDialog(parent=None, message=message,caption=caption,style=wx.OK|wx.CENTRE, pos=wx.DefaultPosition)
+        confirm.ShowModal()
+    
+#Initialize wx App
 app = wx.App()
 app.MainLoop()
 
-# Prompts for token
+#Prompts for token
 token_value = ask(message = 'Enter Discord token:')
-print ('Your token is', token_value)
+if token_value != False:
 
-#Writes token to config file
-with open("config.json", "w") as file:
-    file.write('{\n\t"token":"'+token_value+'"')
-    file.close()
+    #Writes token to config file
+    configDraft='{\n\t"token":"'+token_value+'"'
 
-#prompts for channel ID
-channelID = ask(message = 'Enter channel ID:')
-print ("channel ID is: " + channelID)
+    #prompts for channel ID
+    channelID = ask(message = 'Enter channel ID:')
+    if channelID != False:
+        configDraft+='\n\t"quoteChannelID":"'+channelID+'"\n}'
 
-#appends channel ID to config file
-with open("config.json", "a") as file:
-    file.write('\n\t"quoteChannelID":"'+channelID+'"\n}')
-    file.close()
+        #appends channel ID to config file
+        writeToFile(configDraft)
+    else:
+        #print("Coding is hard")
+        message = "config.json file not created."
+        caption = "File Error"
+        confirm=wx.MessageDialog(parent=None, message=message,caption=caption,style=wx.ICON_ERROR|wx.CENTRE, pos=wx.DefaultPosition)
+        confirm.ShowModal()
 
-if (os.path.isfile("config.json")):
-    message = "config.json file successfully created."
-    caption = "File Created"
-    confirm=wx.MessageDialog(parent=None, message=message,caption=caption,style=wx.OK|wx.CENTRE, pos=wx.DefaultPosition)
-    confirm.ShowModal()
+
 else:
-    print("Coding is hard")
+    #print("Coding is hard")
     message = "config.json file not created."
     caption = "File Error"
     confirm=wx.MessageDialog(parent=None, message=message,caption=caption,style=wx.ICON_ERROR|wx.CENTRE, pos=wx.DefaultPosition)
     confirm.ShowModal()
+
+
+
+
+##
+##
+##if (os.path.isfile("config.json")):
+##    message = "config.json file successfully created."
+##    caption = "File Created"
+##    confirm=wx.MessageDialog(parent=None, message=message,caption=caption,style=wx.OK|wx.CENTRE, pos=wx.DefaultPosition)
+##    confirm.ShowModal()
+##    
+##else:
+##    print("Coding is hard")
+##    message = "config.json file not created."
+##    caption = "File Error"
+##    confirm=wx.MessageDialog(parent=None, message=message,caption=caption,style=wx.ICON_ERROR|wx.CENTRE, pos=wx.DefaultPosition)
+##    confirm.ShowModal()
 
 
 
