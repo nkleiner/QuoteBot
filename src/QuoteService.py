@@ -30,7 +30,6 @@ class QuoteService:
         quote = json_data[0]['q'] + " -" + json_data[0]['a']
         return quote
 
-
     def HandleQuoteRequest(self, message):
         print("\n New Quote Request Received")
 
@@ -38,9 +37,9 @@ class QuoteService:
 
         if len(splitMessage) > 1:
             tempQuote = []
-            
+
             #Specific Person Quote Requests
-            requestedAuthor = splitMessage[1]
+            requestedAuthor = ' '.join(map(str, splitMessage[1:]))
             print("Specific Quote Author Requested: " + requestedAuthor)
 
             #Creating our list of temporary quotes
@@ -54,8 +53,7 @@ class QuoteService:
                 x = random.randrange(0, len(tempQuote))
                 quote = tempQuote[x]
                 #Format names properly
-                author = requestedAuthor[0].upper()
-                author += requestedAuthor[1:]
+                author = requestedAuthor.title()
                 return QuoteResponse(quote, author)
 
             else:
@@ -67,3 +65,4 @@ class QuoteService:
             author = self.authorsList[x]
             quote = self.quotesList[x]
             return QuoteResponse(quote, author)
+    
