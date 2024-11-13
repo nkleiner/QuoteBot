@@ -1,6 +1,5 @@
 import sqlite3
 
-
 class DatabaseService:
     def __init__(self):
         self.connection = sqlite3.connect('quote.db')
@@ -23,11 +22,11 @@ class DatabaseService:
         if(len(entry) == 1):
             return False
 
-        author = entry[1].strip()
+        author = entry[1].strip().title()
         quote = entry[0].strip()
         self.crsr.execute("""insert into quotes (author, quote) values (?, ?)""", (author, quote))
         self.connection.commit()
-        return True
+        return True, author, quote
 
     
     def HandleDatabaseRefreshRequest(self, quotes):
@@ -81,5 +80,5 @@ class DatabaseService:
             else:
                 message = quote[0]
                 
-            author = quote[-1].strip()
+            author = quote[-1].strip().title()
             self.crsr.execute("""insert into quotes (author, quote) values (?, ?)""", (author, message))

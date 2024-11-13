@@ -3,6 +3,7 @@ import discord
 import json
 from DatabaseService import DatabaseService
 from QuoteService import QuoteService
+from StatsService import StatsService
 
 def LoadConfiguration():
     script_dir = os.path.dirname(__file__)
@@ -16,12 +17,13 @@ def LoadConfiguration():
 if __name__ == "__main__":
     #Connection to database
     dbService = DatabaseService()
+    statsService = StatsService()
     quoteService = QuoteService()
 
     intents = discord.Intents.default()
     intents.message_content = True
     dbService.InitializeDatabaseConnection()
-    quoteService.UpdateQuotePool(dbService)
+    quoteService.InitializeQuotePool(dbService, statsService)
 
     botToken, quoteChannelID = LoadConfiguration()
     
@@ -46,11 +48,12 @@ if __name__ == "__main__":
         #Watching for New Quotes to be added to the database
         if channel == "quote-channel":
             print("New Quote Submitted")
-            result = dbService.InsertNewQuote(user_message)
+            result, author, quote = dbService.InsertNewQuote(user_message)
 
             if(result):
                 await message.add_reaction(u"\U0001F44D")
-                quoteService.UpdateQuotePool(dbService)
+                statsService.UpdateAuthorStatistics(author)
+                quoteService.UpdateQuotePool(author, quote)
             
             else:
                 await message.add_reaction(u"\U0001F44E")
@@ -67,12 +70,14 @@ if __name__ == "__main__":
             
         #Help menu
         if message.content.startswith('!help'):
-            await message.channel.send("Hello! I am quote bot. Here's a list of what I can do!")
-            await message.channel.send("1. !quote")
-            await message.channel.send("2. !quote *name*")
-            await message.channel.send("3. !inspire")
-            await message.channel.send("4. !refresh_database")
-            await message.channel.send("5. !format")
+            introduction = "Hello! I am quote bot. Here's a list of what I can do!"
+            one = "1. !quote : Returns a random quote."
+            two = "2. !quote *name* : Returns a random quote from the specified author."
+            three = "3. !inspire : Returns a random inspirational quote unassociated with the custom quote database."
+            four =  "4. !refresh_database : Refreshes the quote database, requires moderator status."
+            five = "5. !stats *name* : Returns the number of quotes the given author has stored."
+            six = "6. !format : Demonstrates the format quote entries should be in."
+            await message.channel.send("{0}\n {1}\n {2}\n {3}\n {4}\n {5}\n {6}".format(introduction, one, two, three, four, five, six))
             
         #Inspirational Quotes
         if message.content.startswith('!inspire'):
@@ -80,11 +85,13 @@ if __name__ == "__main__":
             await message.channel.send(quote)
 
         if message.content.startswith('!stats'):
-            if channel == 'general':
-                raise NotImplementedError
+            statResult, author = statsService.GetRequestedAuthorStat(user_message)
+
+            if(statResult == None):
+                await message.channel.send(f"Quote Bot failed to retrieve statistics for the author {author}! Please contact the developer if you believe this happened in error.")
 
             else:
-                raise NotImplementedError
+                await message.channel.send(f"User {author} has a total of {statResult} quotes in the database!")
 
         if message.content.startswith('!refresh_database'):
             await message.channel.send("Gathering quotes to refresh database")
@@ -95,6 +102,7 @@ if __name__ == "__main__":
             status = dbService.HandleDatabaseRefreshRequest(channel_quotes)
 
             if status == True:
+                quoteService.InitializeQuotePool(dbService, statsService)
                 await message.channel.send("Quote database successfully refreshed")
 
             else:

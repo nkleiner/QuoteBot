@@ -8,8 +8,8 @@ class QuoteService:
         self.quotesList = []
         self.authorsList = []
 
-    def UpdateQuotePool(self, databaseService):
-        #Function that gathers the list of quotes and their authors from the database
+    def InitializeQuotePool(self, databaseService, statsService):
+        #Function that intializes the list of quotes and their authors from the database
         tempQuoteList = []
         tempAuthorList = []
         
@@ -20,7 +20,13 @@ class QuoteService:
             tempAuthorList.append(i[0])
 
         self.quotesList = tempQuoteList
-        self.authorsList = tempAuthorList 
+        self.authorsList = tempAuthorList
+        statsService.InitializeAuthorStatistics(tempAuthorList)
+
+    def UpdateQuotePool(self, author, quote):
+        #Function that updates the run-time list of quotes and authors
+        self.quotesList.append(quote)
+        self.authorsList.append(author.title())
 
     def GetInspirationalQuote(self):
         #Function to get inspirational quotes
