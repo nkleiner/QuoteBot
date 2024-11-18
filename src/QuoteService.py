@@ -60,7 +60,11 @@ class QuoteService:
                 quote = tempQuote[x]
                 #Format names properly
                 author = requestedAuthor.title()
-                return QuoteResponse(quote, author)
+                if(MultiQuoteCheck(quote)):
+                #Chaos Ensues...
+                    return QuoteResponse("N/A", "N/A", ReformatMultiQuote(quote, author))
+                else:
+                    return QuoteResponse(quote, author)
 
             else:
                 return QuoteResponse("N/A", author)            
@@ -70,5 +74,25 @@ class QuoteService:
             x = random.randrange(0, len(self.quotesList))
             author = self.authorsList[x]
             quote = self.quotesList[x]
-            return QuoteResponse(quote, author)
+            if(MultiQuoteCheck(quote)):
+                #Chaos Ensues...
+                return QuoteResponse("N/A", "N/A", ReformatMultiQuote(quote, author))
+            else:
+                return QuoteResponse(quote, author, "N/A")
+        
+
+def MultiQuoteCheck(quote):
+    splitQuote = quote.split("$$$")
+    return len(splitQuote) > 1
     
+
+def ReformatMultiQuote(quotes, authors):
+    splitQuotes = quotes.split("$$$")
+    splitAuthors = authors.split("$$$")
+    listOfFormatedQuotes = []
+
+    for i in range(len(splitQuotes)):
+        current = f'{splitQuotes[i]} - {splitAuthors[i]}'
+        listOfFormatedQuotes.append(current)
+    
+    return '\n'.join(map(str, listOfFormatedQuotes))

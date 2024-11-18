@@ -5,34 +5,53 @@ class DatabaseService:
         self.connection = sqlite3.connect('quote.db')
         self.crsr = self.connection.cursor()
 
-    def GetInitialDatabaseInformation(self):
-        #Initial list of quotes and authors created
-        sql_command = """SELECT * FROM quotes"""
-        result = self.crsr.execute(sql_command)
-        quoteList, authorList = self.EnsureQuotePoolUpdated()
-
     def EnsureQuotePoolUpdated(self):
         sql_command = """SELECT * FROM quotes"""
         result = self.crsr.execute(sql_command)
         return result
 
     def InsertNewQuote(self, message):
-        entry = message.split("-")
+        listOfQuotes = message.split("\n")
 
-        if(len(entry) == 1):
-            return False
+        #MultiQuote
+        if(len(listOfQuotes) > 1):
+            authors = []
+            quotes = []
 
-        author = entry[1].strip().title()
-        quote = entry[0].strip()
+            for currentQuote in listOfQuotes:
+                entry = currentQuote.split("-")
+                if(len(entry) != 2):
+                    return False
+                
+                else:
+                    authors.append(entry[1])
+                    quotes.append(entry[0])
+            
+            #While a more sophisticated answer might exist 
+            #For now we're going to distinguish multi-quote entries by seperated authors and quotes with a special $$$
+            author = '$$$'.join(map(str, authors))
+            quote = '$$$'.join(map(str, quotes))
+
+        else:
+            entry = message.split("-")
+
+            if(len(entry) != 2):
+                #Perhaps handle this better..?
+                return False
+            
+            else:
+                author = entry[1].strip().title()
+                quote = entry[0].strip()
+
+
         self.crsr.execute("""insert into quotes (author, quote) values (?, ?)""", (author, quote))
-        self.connection.commit()
         return True, author, quote
 
     
     def HandleDatabaseRefreshRequest(self, quotes):
         try:
             self.crsr.execute("""DROP TABLE quotes""")
-            self.table_initialization(quotes)
+            self.InitializeDatabaseTables(quotes)
             self.connection.commit()
             return True
 
@@ -52,33 +71,18 @@ class DatabaseService:
         print("Successfully connected to the database")
         
         if(self.CheckForInitilizationStatus()):
-            self.table_initialization([])
+            self.InitializeDatabaseTables([])
 
         self.connection.commit()
 
-    def table_initialization(self, quotes):    
+    def InitializeDatabaseTables(self, quotes):    
         sql_command = """CREATE TABLE if NOT EXISTS quotes (
         author VARCHAR(50),
         quote VARCHAR(100))"""
 
         self.crsr.execute(sql_command)
-        print("Table quotes Initialized Successfully")
+        print("Quotes Table Initialized Successfully")
 
         for quote in quotes:
-            message = ""
-            quote = quote.split('-')
-            if len(quote) > 2:
-                for i in quote[0:-1]:
-                    message += i
-                    if i != quote[-2]:
-                        message += '-'
-
-            elif len(quote) == 1:
-                print(quote)
-                continue
-
-            else:
-                message = quote[0]
-                
-            author = quote[-1].strip().title()
-            self.crsr.execute("""insert into quotes (author, quote) values (?, ?)""", (author, message))
+            self.InsertNewQuote(quote)
+        self.connection.commit()

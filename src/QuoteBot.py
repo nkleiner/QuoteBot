@@ -62,7 +62,10 @@ if __name__ == "__main__":
         if message.content.startswith('!quote'):
             quoteResponse = quoteService.HandleQuoteRequest(message.content)
 
-            if(quoteResponse.quote == "N/A"):
+            if(quoteResponse.multiQuote != "N/A"):
+                await message.channel.send(quoteResponse.multiQuote)
+
+            elif(quoteResponse.quote == "N/A"):
                 await message.channel.send(f'No quotes for {quoteResponse.author} exist in the current database') 
         
             else:
@@ -95,8 +98,8 @@ if __name__ == "__main__":
 
         if message.content.startswith('!refresh_database'):
             await message.channel.send("Gathering quotes to refresh database")
-            council = client.get_channel(quoteChannelID)
-            channel_quotes = [message.content async for message in council.history(limit=None)]
+            quoteChannel = client.get_channel(quoteChannelID)
+            channel_quotes = [message.content async for message in quoteChannel.history(limit=None)]
             await message.channel.send("Quotes gathered, preparing database reset")
 
             status = dbService.HandleDatabaseRefreshRequest(channel_quotes)
